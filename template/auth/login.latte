@@ -1,0 +1,66 @@
+{include 'form.latte'}
+<div class="form">
+    <div class="container" style="background: #14A2E4;">
+        <div class="wrapper">
+            <form class="login-form" method="POST" action="{Route::alias('login-verify')}">
+                <span class="login-form-title">
+                    Přihlášení
+                </span>
+
+                <span class="invalid-feedback" role="alert" style="text-align: center;">
+                    <strong>{Auth::displayError()}</strong>
+                </span>
+
+                <div class="wrapper-input">
+                    <span class="label-input">Uživatelské jméno</span>
+                    <input class="input" type="text" name="username" placeholder="Zadejte své uživatelské jméno" required autofocus>
+                    <span class="focus-input" data-symbol="&#xf206;"></span>
+                </div>
+
+                <div class="wrapper-input">
+                    <span class="label-input">Heslo</span>
+                    <input class="input" type="password" name="password" placeholder="Zadejte své heslo" required>
+                    <span class="focus-input" data-symbol="&#xf190;"></span>
+                </div>
+
+                <div class="wrapper-checkbox" style="margin-left: 10px;">
+                    <input type="checkbox" name="remember" id="remember">
+                    <label for="remember">Zapamatovat si mě</label>
+                </div>
+                {if $recaptcha_needed}
+                <div class="wrapper-captcha">
+                    <div class="g-recaptcha" data-callback="captchaPassed" data-sitekey="{$GLOBALS["CONFIG"]["auth"]["GOOGLE_RECAPTCHA"]}"  required></div>
+                </div>
+                {/if}
+
+                
+                <div class="text-right">
+                    <a n:link="forgot-password">
+                        Zapomněli jste heslo?
+                    </a>
+                </div>
+                
+
+                <div class="container-button">
+                    <div class="wrapper-button">
+                        <div class="button-bg"></div>
+                        <button class="button" id="submit"{if $recaptcha_needed} disabled{/if}>
+                            Přihlásit se
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex">
+                    <span class="txt1" style="padding-bottom: 15px;">
+                        Ještě nemáte vytvořený účet?
+                    </span>
+
+                    <a n:link="register" class="txt2">
+                        Registrovat se
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{include 'footer.latte'}

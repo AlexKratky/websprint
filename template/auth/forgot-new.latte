@@ -1,0 +1,44 @@
+{include 'form.latte'}
+<div class="form">
+    <div class="container" style="background: #14A2E4;">
+        <div class="wrapper">
+            <form class="login-form" method="POST" action="{Route::alias('forgot-password-token-save', Route::getValue('TOKEN'))}">
+                <span class="login-form-title">
+                    Resetovat heslo
+                </span>
+
+                <span class="invalid-feedback" role="alert" style="text-align: center;">
+                    <strong>{Auth::displayError()}</strong>
+                </span>
+
+                <div class="wrapper-input">
+                    <span class="label-input">E-mail</span>
+                    <input class="input" type="email" name="email" placeholder="Zadejte svůj e-mail" required autofocus>
+                    <span class="focus-input" data-symbol="&#xF159;"></span>
+                </div>
+
+                <div class="wrapper-input">
+                    <span class="label-input">Heslo</span>
+                    <input class="input" type="password" name="password" placeholder="Zadejte své heslo" required>
+                    <span class="focus-input" data-symbol="&#xf190;"></span>
+                </div>
+                {if $recaptcha_needed}
+                <div class="wrapper-captcha">
+                    <div class="g-recaptcha" data-callback="captchaPassed" data-sitekey="{$GLOBALS["CONFIG"]["auth"]["GOOGLE_RECAPTCHA"]}"  required></div>
+                </div>
+                {/if}
+
+
+                <div class="container-button">
+                    <div class="wrapper-button">
+                        <div class="button-bg"></div>
+                        <button class="button" id="submit"{if $recaptcha_needed} disabled{/if}>
+                            Uložit nové heslo
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{include 'footer.latte'}

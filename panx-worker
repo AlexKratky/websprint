@@ -1,0 +1,515 @@
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+$PANX_VERSION = "0.2.2";
+
+$PATH = __DIR__;
+$SCRIPT_PATH = __DIR__."/app/panx-worker/scripts/";
+
+if(file_exists(__DIR__."/app/panx-worker/TS_CMD.php")) {
+    require(__DIR__."/app/panx-worker/TS_CMD.php");
+    require(__DIR__."/app/panx-worker/TextTable.php");
+
+    $PROGRAM_INFO["name"] = "panx-worker";
+    $PROGRAM_INFO["version"] = "v$PANX_VERSION (19-07-2019) [dd-mm-yyyy]";
+    $CONFIG = (file_exists(".config")) ? parse_ini_file(".config", true) : null;
+
+    $BINDS = array('route-list', '-v', '--v', 'v');
+
+    if ($ARGS_COUNT == 0) {
+        info_msg("panx-worker v$PANX_VERSION. Use argument ? to see help.");
+    } else {
+        if($ARGS[0] == "?") {
+            //HELP
+            displayInfo();
+            write("Available parameters: " . colorize("create", "red", "black"));
+            exit();
+        }
+        if( function_exists ( $ARGS[0] ) && !in_array($ARGS[0], $BINDS) ) {
+            call_user_func($ARGS[0]);
+        } else {
+            //binds
+            switch($ARGS[0]) {
+                case 'route-list':
+                    routelist();
+                    break;
+                case 'v':
+                case '-v':
+                case '--v':
+                    version();
+                    break;
+                default:
+                    error_msg("Invalid argument.");
+                    break;
+            }
+        }
+    }
+} else {
+    echo "Class TS_CMD was not found. The only argument you can call is 'install [VERSION]' or 'info [extension]'" . "\n";
+    $ARGS = $argv;
+    array_shift($ARGS);
+
+    if(isset($ARGS[0])) {
+        if($ARGS[0] == "install") {
+            install($ARGS);
+        }
+        if($ARGS[0] == "info") {
+            info($ARGS);
+        }
+    }
+}
+
+function create() {
+    global $ARGS_COUNT;
+    global $ARGS;
+    global $PATH;
+    global $SCRIPT_PATH;
+    global $CONFIG;
+    if (!isset($ARGS[1])) {error("You need to specify what to create.");}
+    if($ARGS[1] == "doc" || $ARGS[1] == "documentation") {
+        require $SCRIPT_PATH."create/doc.php";
+
+    } else if($ARGS[1] == "post") {
+        require $SCRIPT_PATH."create/post.php";
+
+    } else if($ARGS[1] == "version") {
+        require $SCRIPT_PATH."create/version.php";
+    } else if($ARGS[1] == "auth") {
+        require $SCRIPT_PATH."create/auth.php";
+    } else if($ARGS[1] == "api") {
+        require $SCRIPT_PATH."create/api.php";
+    } else if($ARGS[1] == "model") {
+        require $SCRIPT_PATH."create/model.php";
+    } else if($ARGS[1] == "controller") {
+        require $SCRIPT_PATH."create/controller.php";
+    } else if($ARGS[1] == "debug") {
+        require $SCRIPT_PATH."create/debug.php";
+    } else if($ARGS[1] == "middleware") {
+        require $SCRIPT_PATH."create/middleware.php";
+    }else if($ARGS[1] == "migration") {
+        require $SCRIPT_PATH."create/migration.php";
+    }
+}
+
+function install($ARGS) {
+    //$ARGS_COUNT = count($argv) - 1;
+    //$ARGS = $argv;
+    //array_shift($ARGS);
+    global $SCRIPT_PATH;
+    global $PATH;
+    
+    $version;
+    if (!class_exists('ZipArchive')) {
+        echo ("ZipArchive is not installed. \n");
+        exit();
+    }
+
+    if (!isset($ARGS[1]) || $ARGS[1] == "clean") {
+        $version = file_get_contents("https://panx.eu/api/v1/getlatestversion");
+        echo ("No version passed, using the latest one: $version \n");
+    } else {
+        $version = $ARGS[1];
+    }
+
+    if (!file_exists(__DIR__ . "/temp/")) {
+        mkdir(__DIR__ . "/temp");
+    }
+    try {
+        $z = fopen("https://panx.eu/download/$version.zip", 'r');
+        if (!$z) {
+            echo ("Failed to download $version.zip\n");
+            exit();
+        }
+        file_put_contents(__DIR__ . "/temp/$version.zip", $z);
+        fclose($z);
+    } catch (Exception $e) {
+        error($e);
+    }
+
+
+    if (!isset($ARGS[2]) && $ARGS[1] != "clean") {
+        
+        $zip = new ZipArchive;
+        if ($zip->open(__DIR__ . "/temp/$version.zip") === true) {
+            $zip->extractTo(__DIR__);
+            $zip->close();
+            if (file_exists(__DIR__ . "/temp/$version/changelog")) {
+                displayChangelog(__DIR__ . "/temp/$version/changelog");
+            }
+
+            echo ("Installation was successful \n");
+        } else {
+            echo ("Failed to install.\n");
+            exit();
+        }
+
+
+    } else if ($ARGS[1] == "clean" || $ARGS[2] == "clean") {
+        
+        if (!file_exists(__DIR__ . "/temp/$version/")) {
+            mkdir(__DIR__ . "/temp/$version");
+        }
+        $zip = new ZipArchive;
+        if ($zip->open(__DIR__ . "/temp/$version.zip") === true) {
+            $zip->extractTo(__DIR__ . "/temp/$version/");
+            $zip->close();
+            $path = __DIR__ . "/";
+            $source = __DIR__ . "/temp/$version/";
+            $folders = array($source);
+            $index = 0;
+
+            $SKIP;
+            $ADDITIONAL_FILES = array();
+            if (file_exists(__DIR__ . "/temp/$version/update.skip")) {
+                $SKIP = file_get_contents(__DIR__ . "/temp/$version/update.skip");
+                $SKIP = explode(PHP_EOL, $SKIP);
+                for ($s = 0; $s < count($SKIP); $s++) {
+                    $SKIP[$s] = trim($SKIP[$s]);
+                    if (isset($SKIP[$s][0]) && $SKIP[$s][0] == "!") {
+                        //exception
+                        $SKIP[$s] = substr($SKIP[$s], 1);
+                        if (is_dir($source . $SKIP[$s])) {
+                            echo ("Adding folder (!): " . $source . $SKIP[$s] . "\n");
+                            array_push($folders, $source . $SKIP[$s]);
+                        } else {
+                            echo ("Adding file (!): " . $source . $SKIP[$s] . "\n");
+                            array_push($ADDITIONAL_FILES, $source . $SKIP[$s]);
+                        }
+                    }
+                }
+            }
+
+            while (count($folders) > $index) {
+                $f = scandir($folders[$index]);
+                $rel_path = $path . str_replace($source, "", $folders[$index]);
+                if (!file_exists($rel_path)) {
+                    mkdir($rel_path, 0775, true);
+                }
+
+                for ($i = 2; $i < count($f); $i++) {
+                    // #+?\ .+?\n <- Match title
+                    if (is_dir($folders[$index] . $f[$i])) {
+                        if (in_array(str_replace($source, "", $folders[$index]) . $f[$i] . "/", $SKIP)) {
+                            echo ("Skipping folder: " . str_replace($source, "", $folders[$index]) . $f[$i] . "/\n");
+                            continue;
+                        }
+                        if (!in_array($folders[$index] . $f[$i] . "/", $folders)) {
+                            echo ("Adding folder: " . str_replace($source, "", $folders[$index]) . $f[$i] . "/\n");
+                            array_push($folders, $folders[$index] . $f[$i] . "/");
+                        } else {
+                            echo ("Skipping folder (duplicity): " . str_replace($source, "", $folders[$index]) . $f[$i] . "/\n");
+                        }
+                        continue;
+                    }
+
+                    if (!empty($SKIP)) {
+                        //var_dump($SKIP);
+                        if (in_array(str_replace($source, "", $folders[$index]) . $f[$i], $SKIP)) {
+                            echo ("Skipping: " . str_replace($source, "", $folders[$index]) . $f[$i] . "\n");
+                            continue;
+                        } else {
+                            rename($folders[$index] . $f[$i], $rel_path . $f[$i]);
+
+                        }
+                    }
+
+                }
+                $index++;
+            }
+
+            foreach ($ADDITIONAL_FILES as $ADDITIONAL_FILE) {
+                $rel_path = str_replace($source, "", $ADDITIONAL_FILE);
+                if (!file_exists(pathinfo($rel_path)['dirname'] . "/")) {
+                    echo ("Error: Folder doesnt exists " . pathinfo($rel_path)['dirname'] . "/" . "\n");
+                    if (mkdir(pathinfo($rel_path)['dirname'] . "/", 0775, true)) {
+                        echo ("folder created " . pathinfo($rel_path)['dirname'] . "/" . "\n");
+
+                    } else {
+                        echo ("error: folder cant be created " . pathinfo($rel_path)['dirname'] . "/" . "\n");
+                    }
+                }
+                if (!file_exists($ADDITIONAL_FILE)) {
+                    echo ($ADDITIONAL_FILE . " doesnt exists.");
+                    continue;
+                }
+                if (is_writable(__DIR__ . "/" . $rel_path)) {
+                    echo (__DIR__ . "/" . $rel_path . " : true\n");
+                } else {
+                    echo (__DIR__ . "/" . $rel_path . " : false\n");
+
+                }
+                try {
+                    if (!file_exists(pathinfo($rel_path)['dirname'] . "/")) {
+                        echo ("Error: Folder doesnt exists\n");
+                    }
+                    usleep(20);
+                    file_put_contents(__DIR__ . "/" . $rel_path, "test");
+                    usleep(20);
+
+                    rename($ADDITIONAL_FILE, __DIR__ . "/" . $rel_path);
+                } catch (Exception $e) {
+                    echo ("Exception:\n$e\n");
+                }
+            }
+            if (!file_exists(__DIR__ . "/routes/route.php")) {
+                file_put_contents(__DIR__ . "/routes/route.php", "<?php\r\n");
+            }
+
+            if (file_exists(__DIR__ . "/temp/$version/changelog")) {
+                displayChangelog(__DIR__ . "/temp/$version/changelog");
+            }
+            echo ("$version was installed successfuly.\n");
+
+        } else {
+            echo ("Failed to install.\n");
+            exit();
+        }
+
+
+    } else {
+        error("Invalid argument.\n");
+    }
+    /**
+     * Now creates dirs, setup chmod
+     */
+    createDirs(array('temp', 'cache', 'logs', 'template/posts', 'app/controllers', 'app/middlewares', 'app/models', 'app/migrations'. 'crons'));
+    echo "\nNow you just need to run command 'composer install' and create '.config' file (You can do it by running command: 'php panx-worker config').\n";
+    unlink(__DIR__."/temp/$version.zip");
+    rrmdir(__DIR__."/temp/$version/");
+}
+
+function update() {
+    global $ARGS_COUNT;
+    global $ARGS;
+    global $PATH;
+    global $SCRIPT_PATH;
+
+    require $SCRIPT_PATH."update.php";
+
+}
+
+function extension() {
+    global $ARGS_COUNT;
+    global $ARGS;
+    global $PATH;
+    global $SCRIPT_PATH;
+    if(empty($ARGS[1])) {
+        require $SCRIPT_PATH . "extension/list.php";
+    } else {
+        if($ARGS[1] == "install") {
+            require($SCRIPT_PATH . "extension/install.php");
+        } else if ($ARGS[1] == "uninstall") {
+            require $SCRIPT_PATH . "extension/uninstall.php";
+        } else {
+            if(file_exists($SCRIPT_PATH . "extension/".strtolower($ARGS[1]).".php")) {
+                require $SCRIPT_PATH . "extension/".strtolower($ARGS[1]).".php";
+            } else {
+                error_msg("Unkown extension");
+            }
+        }
+    }
+}
+
+function routelist() {
+    global $ARGS_COUNT;
+    global $ARGS;
+    global $PATH;
+    global $SCRIPT_PATH;
+
+    require $SCRIPT_PATH."routelist.php";
+
+}
+
+function clear() {
+    global $ARGS_COUNT;
+    global $ARGS;
+    global $PATH;
+    global $SCRIPT_PATH;
+
+    require $SCRIPT_PATH."clear.php";
+}
+
+function info($ARGS = null) {
+    global $PATH;
+    if($ARGS === null) {
+        $ARGS = $GLOBALS["ARGS"];
+    }
+    $ext = false;
+    echo("You can also generate info file for extension using argument 'extension'\n");
+    if (isset($ARGS[1]) && ($ARGS[1] == "ext" || $ARGS[1] == "extension")) {
+        $ext = readline("Extension name: ");
+    }
+    $info = array();
+
+    $path = $PATH . "/";
+    $index = 0;
+    $folders = array($path);
+    while (count($folders) > $index) {
+        $f = scandir($folders[$index]);
+        for ($i = 2; $i < count($f); $i++) {
+            if ($ext !== false) {
+                if ($f[$i] == "panx-worker") {
+                    continue;
+                }
+            }
+            // #+?\ .+?\n <- Match title
+            if (is_dir($folders[$index] . $f[$i])) {
+                if ($f[$i] == ".git") {
+                    continue;
+                }
+                if ($f[$i] == ".vscode") {
+                    continue;
+                }
+
+                array_push($folders, $folders[$index] . $f[$i] . "/");
+                continue;
+            }
+            //$info[str_replace($PATH, "", $folders[$index] . $f[$i])] = array(filemtime($folders[$index] . $f[$i]), filesize($folders[$index] . $f[$i]));
+            if($f[$i] == ".config") continue;
+            $info[str_replace($PATH, "", $folders[$index] . $f[$i])] = sha1_file($folders[$index] . $f[$i]);
+
+        }
+        $index++;
+    }
+    if($ext === false) {
+        file_put_contents($PATH . "/info.json", json_encode($info));
+    } else {
+        file_put_contents($PATH . "/app/panx-worker/scripts/extension/" . strtolower($ext) . ".json", json_encode($info));
+    }
+
+}
+
+function config() {
+    global $PATH;
+    global $SCRIPT_PATH;
+
+    require $SCRIPT_PATH."config.php";
+}
+
+function serve() {
+    global $ARGS;
+    global $PATH;
+    global $SCRIPT_PATH;
+    
+    require $SCRIPT_PATH."serve.php";
+}
+
+function migrate() {
+    global $ARGS_COUNT;
+    global $ARGS;
+    global $PATH;
+    global $SCRIPT_PATH;
+    global $CONFIG;
+    
+    require $SCRIPT_PATH."migrate.php";
+}
+
+/**
+ * Creates empty dirs needed by panx framework with specified chmod (777).
+ */
+function setup() {
+    createDirs(array('temp', 'cache', 'logs', 'template/posts', 'app/controllers', 'app/middlewares', 'app/models', 'app/migrations', 'crons'));
+
+}
+
+function version() {
+    global $PANX_VERSION;
+    info_msg("Current version: $PANX_VERSION (".hash_file('md5', 'panx-worker').")");
+}
+
+function test() {
+    global $ARGS_COUNT;
+    global $ARGS;
+    global $PATH;
+    if(isset($ARGS[1])) {
+        $c = $ARGS[1];
+        require $PATH."/tests/Test.php";
+        require $PATH."/tests/". $c.".php";
+        $x = new $c();
+        $x->run();
+    } else {
+        error("You need to specify the test name");
+    }
+}
+
+
+
+function displayChangelog($path) {
+    global $SCRIPT_PATH;
+
+    require $SCRIPT_PATH."display_changelog.php";
+}
+
+
+
+function rrmdir($dir)
+{
+    if (is_dir($dir)) {
+        $objects = scandir($dir);
+        foreach ($objects as $object) {
+            if ($object != "." && $object != "..") {
+                if (is_dir($dir . "/" . $object)) {
+                    rrmdir($dir . "/" . $object);
+                } else {
+                    unlink($dir . "/" . $object);
+                }
+
+            }
+        }
+        rmdir($dir);
+    }
+}
+
+function addFolderToZip($dir, $zipArchive, $zipdir = '') {
+    $relativePath = str_replace(__DIR__."/","",$dir);
+
+    //public & .git
+    if(preg_match('/public\/download\/.*/', $relativePath) || preg_match('/public\\\download\\\.*/', $relativePath) || preg_match('/\.git\/.*/', $relativePath) || preg_match('/\.git\\.*/', $relativePath)) {
+        echo "Skipping: " . $relativePath ."\n";
+        return;
+    }
+    //.vscode
+    if (preg_match('/\.vscode\/.*/', $relativePath) || preg_match('/\.vscode\\.*/', $relativePath)) {
+    echo "Skipping: " . $relativePath . "\n";
+    return;
+}
+
+
+    if (is_dir($dir)) {
+        if ($dh = opendir($dir)) {
+            if (!empty($zipdir)) {
+                $zipArchive->addEmptyDir($zipdir);
+            }
+            while (($file = readdir($dh)) !== false) {
+                if (!is_file($dir . $file)) {
+                    if (($file !== ".") && ($file !== "..")) {
+                        addFolderToZip($dir . $file . "/", $zipArchive, $zipdir . $file . "/");
+                    }
+                } else {
+                    if($file != ".config") {
+                        $zipArchive->addFile($dir . $file, $zipdir . $file);
+                    } else {
+                        echo "Skipping: .config \n";
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+function createDirs($dirs) {
+    foreach ($dirs as $dir) {
+        if(!file_exists(__DIR__.'/'.$dir.'/')) {
+            if(!mkdir(__DIR__.'/'.$dir.'/', 0777, true)) {
+                echo "Failed to create: " . __DIR__.'/'.$dir.'/' . "\n";   
+            }
+        }
+        chmod( __DIR__.'/'.$dir.'/', 0777);
+        chgrp( __DIR__.'/'.$dir.'/', 'www-data');
+        echo "File perm. of ". __DIR__.'/'.$dir.'/' . " : " .substr(sprintf('%o', fileperms(__DIR__.'/'.$dir.'/')), -4) . "\n";
+
+    }
+}

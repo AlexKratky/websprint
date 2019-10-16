@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>ws</title>
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro&display=swap" rel="stylesheet"> 
+</head>
+<body>
+    <div class="main row">
+        <div class="white col-6">
+            <div class="logo">
+                <img src="logo_th_full.svg" style="width: 200px; height: auto;">
+            </div>
+            <div class="action">
+                <div class="action-image">
+                    <img src="search.svg">
+                </div>
+                <div class="action-text blue-text">
+                    PROCHÁZET
+                </div>
+            </div>
+        </div>
+        <div class="blue col-6">
+            <div class="login">
+                <button class="btn-round">
+                    Přihlásit se
+                </button>
+            </div>
+            <div class="action">
+                <div class="action-image">
+                    <img src="write.svg">
+                </div>
+                <div class="action-text">
+                    ZAPSAT
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+<style>
+    .main {
+
+    }
+
+    .white {
+        height: 100vh;
+    }
+
+    .blue {
+        height: 100vh;
+        color: white;
+        background: #14a2e4;
+    }
+
+    .blue-text {
+        color: #14a2e4;
+    }
+
+    .action {
+        cursor: pointer;
+    }
+
+    .action:hover .action-text{
+        text-decoration: underline;
+    }
+
+    .login {
+        float: right;
+    }
+
+    .btn-round {
+        background-color: transparent; /* Green */
+        border: 2px solid white;
+        border-radius: 50px;
+        color: white;
+        cursor: pointer;
+        padding: 13px 26px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 14px;
+        transition: ease-in-out 0.1s;
+    }
+
+    .btn-round:hover {
+        background: white;
+        color: #14a2e4;
+    }
+
+    .action-image {
+
+    }
+
+    .action-image img {
+        width: 100%;
+        height: auto;
+        margin: auto auto;
+    }
+
+    .action-text {
+        font-size: 45px;
+        text-align: center;
+        margin-top: -50px;
+        position: relative;
+        z-index: 10;
+    }
+
+    /*responsive*/
+[class*="col-"] {
+  width: 100%;
+}
+
+[class*="col-"] {
+  float: left;
+  padding: 15px;
+}
+
+
+@media only screen and (min-width: 600px) {
+  .col-s-1 {width: 8.33%;}
+  .col-s-2 {width: 16.66%;}
+  .col-s-3 {width: 25%;}
+  .col-s-4 {width: 33.33%;}
+  .col-s-5 {width: 41.66%;}
+  .col-s-6 {width: 50%;}
+  .col-s-7 {width: 58.33%;}
+  .col-s-8 {width: 66.66%;}
+  .col-s-9 {width: 75%;}
+  .col-s-10 {width: 83.33%;}
+  .col-s-11 {width: 91.66%;}
+  .col-s-12 {width: 100%;}
+}
+@media only screen and (min-width: 768px) {
+  .col-1 {width: 8.33%;}
+  .col-2 {width: 16.66%;}
+  .col-3 {width: 25%;}
+  .col-4 {width: 33.33%;}
+  .col-5 {width: 41.66%;}
+  .col-6 {width: 50%;}
+  .col-7 {width: 58.33%;}
+  .col-8 {width: 66.66%;}
+  .col-9 {width: 75%;}
+  .col-10 {width: 83.33%;}
+  .col-11 {width: 91.66%;}
+  .col-12 {width: 100%;}
+}
+* {
+  box-sizing: border-box;
+  font-family: 'Source Sans Pro', sans-serif;
+}
+html, body {
+    margin: 0;
+    padding: 0;
+}
+.row::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+</style>

@@ -1,0 +1,71 @@
+{include 'form.latte'}
+<div class="form">
+    <div class="container" style="background: #14A2E4;">
+        <div class="wrapper">
+            <form class="login-form" method="POST" action="{Route::alias('edit-save')}">
+                <span class="login-form-title">
+                    Upravit profil
+                </span>
+
+                <span class="invalid-feedback" role="alert" style="text-align: center;">
+                    <strong>{Auth::displayError()}</strong>
+                </span>
+
+                <div class="wrapper-input">
+                    <span class="label-input">E-mail</span>
+                    <input class="input" type="email" name="email" placeholder="Zadejte svůj e-mail" value="{$mail}" autofocus required>
+                    <span class="focus-input" data-symbol="&#xF159;"></span>
+                </div>
+
+                <div class="wrapper-input">
+                    <span class="label-input">Uživatelské jméno</span>
+                    <input class="input" type="text" name="username" placeholder="Zadejte své uživatelské jméno" value="{$name}" required>
+                    <span class="focus-input" data-symbol="&#xf206;"></span>
+                </div>
+
+                <div class="wrapper-input">
+                    <span class="label-input">Nové heslo</span>
+                    <input class="input" type="password" name="newpassword" placeholder="Zadejte své nové heslo">
+                    <span class="focus-input" data-symbol="&#xf190;"></span>
+                </div>
+
+                <div class="wrapper-input">
+                    <span class="label-input">Současné heslo</span>
+                    <input class="input" type="password" name="password" placeholder="Zadejte své současné heslo" required>
+                    <span class="focus-input" data-symbol="&#xf190;"></span>
+                </div>
+
+                {if $recaptcha_needed}
+                <div class="wrapper-captcha">
+                    <div class="g-recaptcha" data-callback="captchaPassed" data-sitekey="{$GLOBALS["CONFIG"]["auth"]["GOOGLE_RECAPTCHA"]}" required></div>
+                </div>
+                {/if}
+
+                <div class="container-button">
+                    <div class="wrapper-button">
+                        <div class="button-bg"></div>
+                        <button class="button" id="submit"{if $recaptcha_needed} disabled{/if}>
+                            Uložit
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex">
+                    <span class="txt1" style="padding-bottom: 15px;">
+                        Když změníte svůj e-mail, musí jej znovu ověřit.
+                    </span>
+                    {if !$twofa}
+                    <span class="txt2" style="padding-bottom: 15px;">
+                        Nastavit <a n:link="'2fa-setup'">dvoufázové ověření</a>.
+                    </span>
+                    {else}
+                    <span class="txt2" style="padding-bottom: 15px;">
+                        Dvoufázové ověřování bylo nastaveno. <a n:link="'2fa-disable'">Deaktivovat dvoufázové ověřování</a>.
+                    </span>
+                    {/if}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{include 'footer.latte'}
