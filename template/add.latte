@@ -95,10 +95,7 @@
           }
         },
         eventOverlap: false,
-        events: [{
-            title: 'All Day Event',
-            start: new Date(y, m, 1)
-          },
+        events: [
           {foreach $events as $event}
             {
             title: {$event["TEXT"]},
