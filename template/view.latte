@@ -87,7 +87,7 @@
         events: [
           {foreach $events as $event}
             {
-            title: {$event["TEXT"]},
+            title: {$event["TEXT"] . " (" . $event["USER"] . ")" },
             start: new Date({str_replace(" ", "T", $event["DATE_FROM"])}),
             end: new Date({str_replace(" ", "T", $event["DATE_TO"])}),
             allDay: false,
